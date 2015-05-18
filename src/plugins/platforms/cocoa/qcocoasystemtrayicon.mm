@@ -377,6 +377,8 @@ QT_END_NAMESPACE
     Q_UNUSED(notification);
     down = NO;
 
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+
     [self setNeedsDisplay:YES];
 }
 
