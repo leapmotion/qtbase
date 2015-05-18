@@ -102,7 +102,6 @@ QT_USE_NAMESPACE
     QCocoaSystemTrayIcon *systray;
     NSStatusItem *item;
     QCocoaMenu *menu;
-    bool menuVisible;
     QIcon icon;
     QT_MANGLE_NAMESPACE(QNSImageView) *imageCell;
 }
@@ -202,8 +201,6 @@ void QCocoaSystemTrayIcon::updateIcon(const QIcon &icon)
 
     m_sys->item->icon = icon;
 
-    const bool menuVisible = m_sys->item->menu && m_sys->item->menuVisible;
-
     // The reccomended maximum title bar icon height is 18 points
     // (device independent pixels). The menu height on past and
     // current OS X versions is 22 points. Provide some future-proofing
@@ -218,9 +215,8 @@ void QCocoaSystemTrayIcon::updateIcon(const QIcon &icon)
     // devicePixelRatio for the "best" screen on the system.
     qreal devicePixelRatio = qApp->devicePixelRatio();
     const int maxPixmapHeight = maxImageHeight * devicePixelRatio;
-    const QIcon::Mode mode = menuVisible ? QIcon::Selected : QIcon::Normal;
     QSize selectedSize;
-    Q_FOREACH (const QSize& size, sortByHeight(icon.availableSizes(mode))) {
+    Q_FOREACH (const QSize& size, sortByHeight(icon.availableSizes())) {
         // Select a pixmap based on the height. We want the largest pixmap
         // with a height smaller or equal to maxPixmapHeight. The pixmap
         // may rectangular; assume it has a reasonable size. If there is
@@ -234,7 +230,7 @@ void QCocoaSystemTrayIcon::updateIcon(const QIcon &icon)
         }
     }
 
-    QPixmap pixmap = icon.pixmap(selectedSize, mode);
+    QPixmap pixmap = icon.pixmap(selectedSize);
 
     // Draw a low-resolution icon if there is not enough pixels for a retina
     // icon. This prevents showing a small icon on retina displays.
@@ -381,9 +377,6 @@ QT_END_NAMESPACE
     Q_UNUSED(notification);
     down = NO;
 
-    parent->systray->updateIcon(parent->icon);
-    parent->menuVisible = false;
-
     [self setNeedsDisplay:YES];
 }
 
@@ -392,8 +385,6 @@ QT_END_NAMESPACE
     down = YES;
     int clickCount = [mouseEvent clickCount];
     [self setNeedsDisplay:YES];
-
-    parent->systray->updateIcon(parent->icon);
 
     if (clickCount == 2) {
         [self menuTrackingDone:nil];
@@ -450,7 +441,6 @@ QT_END_NAMESPACE
     if (self) {
         item = [[[NSStatusBar systemStatusBar] statusItemWithLength:NSSquareStatusItemLength] retain];
         menu = 0;
-        menuVisible = false;
         systray = sys;
         imageCell = [[QNSImageView alloc] initWithParent:self];
         [item setView: imageCell];
@@ -494,7 +484,6 @@ QT_END_NAMESPACE
          selector:@selector(menuTrackingDone:)
              name:NSMenuDidEndTrackingNotification
                  object:m];
-        menuVisible = true;
         [item popUpStatusItemMenu: m];
     }
 }
